@@ -1,4 +1,4 @@
-// --- 1. GLOBAL MAZE GRID ---
+// --- 1. GLOBAL GAME STATE ---
 window.mazeGrid = [
   [1, 1, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 1, 0, 1],
@@ -9,45 +9,94 @@ window.mazeGrid = [
   [1, 1, 1, 1, 1, 1, 1]
 ];
 
-// --- 2. BULLETPROOF COLLISION LOGIC ---
+// We make the camera state global so all scripts know which view you are in
+window.isFirstPerson = true; 
+
+// --- 2. COLLISION & ADVANCED ROTATION LOGIC ---
 AFRAME.registerComponent('player-collider', {
   init: function() {
     this.lastSafePosition = new THREE.Vector3();
     this.lastSafePosition.copy(this.el.object3D.position);
+    
+    this.cameraEl = document.getElementById('camera');
+    this.playerBody = document.getElementById('player-body');
+
+    this.keys = { shift: false, a: false, d: false };
+    
+    // We use this to track the character's independent spin in 3rd person
+    this.bodyOffset = 0; 
+
+    // Listen for keys being pressed down
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Shift') {
+        this.keys.shift = true;
+        // Turn off WASD movement so the player doesn't walk while holding Shift!
+        this.el.setAttribute('wasd-controls', 'enabled', false);
+      }
+      if (event.key.toLowerCase() === 'a') this.keys.a = true;
+      if (event.key.toLowerCase() === 'd') this.keys.d = true;
+    });
+
+    // Listen for keys being let go
+    window.addEventListener('keyup', (event) => {
+      if (event.key === 'Shift') {
+        this.keys.shift = false;
+        // Snap the character back to facing forward
+        this.bodyOffset = 0; 
+        // Turn walking back on!
+        this.el.setAttribute('wasd-controls', 'enabled', true);
+      }
+      if (event.key.toLowerCase() === 'a') this.keys.a = false;
+      if (event.key.toLowerCase() === 'd') this.keys.d = false;
+    });
   },
   
   tick: function () {
-    // Because this is on the camera, pos is your EXACT absolute location
-    let pos = this.el.object3D.position;
+    const turnSpeed = 0.05;
 
-    // Convert coordinates to grid row and column
+    // Handle Shift + A/D Rotation
+    if (this.keys.shift) {
+      if (window.isFirstPerson) {
+        // --- 1ST PERSON: Rotate Camera ---
+        if (this.cameraEl && this.cameraEl.components['look-controls']) {
+          if (this.keys.a) this.cameraEl.components['look-controls'].yawObject.rotation.y += turnSpeed;
+          if (this.keys.d) this.cameraEl.components['look-controls'].yawObject.rotation.y -= turnSpeed;
+        }
+      } else {
+        // --- 3RD PERSON: Rotate ONLY the Character Body ---
+        if (this.keys.a) this.bodyOffset += turnSpeed;
+        if (this.keys.d) this.bodyOffset -= turnSpeed;
+      }
+    }
+
+    // Apply the rotation to the body (Camera Rotation + Independent Spin Offset)
+    if (this.cameraEl && this.playerBody) {
+      this.playerBody.object3D.rotation.y = this.cameraEl.object3D.rotation.y + this.bodyOffset;
+    }
+
+    // --- BULLETPROOF COLLISION MATH ---
+    let pos = this.el.object3D.position;
     let col = Math.round(pos.x / 3);
     let row = Math.round(pos.z / 3);
 
-    // Make sure we are inside the map limits
     if (window.mazeGrid[row] !== undefined) {
       let currentTile = window.mazeGrid[row][col];
 
       if (currentTile === 1) {
-        // WALL HIT! We snap your X and Z back to the safe spot.
-        // We leave Y alone so you don't fall out of the sky in top-down mode.
         pos.x = this.lastSafePosition.x;
         pos.z = this.lastSafePosition.z;
       } 
       else if (currentTile === 3) {
-        // YOU WIN!
         alert("You Escaped the Maze!");
-        pos.set(3, 1.6, 3); // Teleport back to start
+        pos.set(3, 0, 3); 
         this.lastSafePosition.copy(pos);
         if (window.resetToFirstPerson) window.resetToFirstPerson();
       } 
       else {
-        // Safe empty path. Remember this exact coordinate.
         this.lastSafePosition.x = pos.x;
         this.lastSafePosition.z = pos.z;
       }
     } else {
-      // Prevent walking entirely off the edge of the world
       pos.x = this.lastSafePosition.x;
       pos.z = this.lastSafePosition.z;
     }
@@ -92,35 +141,28 @@ AFRAME.registerComponent('maze-builder', {
   }
 });
 
-// --- 4. TOP-DOWN CAMERA TOGGLE (Press V) ---
+// --- 4. CAMERA TOGGLE LOGIC (Press V) ---
 window.addEventListener('load', () => {
-  const player = document.getElementById('player');
+  const camera = document.getElementById('camera');
   const playerBody = document.getElementById('player-body');
-  let isFirstPerson = true;
 
-  // Helper function to reset view when you win
   window.resetToFirstPerson = function() {
-    isFirstPerson = true;
-    player.object3D.position.y = 1.6;
+    window.isFirstPerson = true;
+    camera.setAttribute('position', '0 1.6 0');
     playerBody.setAttribute('visible', 'false');
   };
 
   window.addEventListener('keydown', (event) => {
     if (event.key === 'v' || event.key === 'V') {
-      isFirstPerson = !isFirstPerson; 
+      // Flips the global state
+      window.isFirstPerson = !window.isFirstPerson; 
 
-      if (isFirstPerson) {
-        // Return to 1st person (Height 1.6m, body hidden)
-        player.object3D.position.y = 1.6;
+      if (window.isFirstPerson) {
+        camera.setAttribute('position', '0 1.6 0');
         playerBody.setAttribute('visible', 'false');
       } else {
-        // TOP-DOWN MODE: Float the camera up 8 meters into the air!
-        player.object3D.position.y = 8;
-        
-        // Make body visible, push it 7.5 meters down (to touch the floor) 
-        // and 2 meters forward so it sits perfectly in your camera's view
+        camera.setAttribute('position', '0 5 4');
         playerBody.setAttribute('visible', 'true');
-        playerBody.setAttribute('position', '0 -7.5 -2');
       }
     }
   });

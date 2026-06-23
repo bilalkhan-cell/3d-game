@@ -1,145 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚠️ Experimental Build Warning</title>
+<html>
+  <head>
+    <title>3D Maze Escape</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <script src="js/main.js"></script>
+  </head>
+  <body>
+    <a-scene maze-builder>
+      <a-sky color="#87CEEB"></a-sky> 
+      <a-plane position="0 0 0" rotation="-90 0 0" width="50" height="50" color="#2E8B57"></a-plane>
 
-<style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial, sans-serif;
-}
+      <a-entity id="player" position="3 0 3" wasd-controls="acceleration: 100" player-collider>
+        
+        <a-cylinder id="player-body" position="0 1 0" height="2" radius="0.4" color="#FF6B6B" visible="false">
+          
+          <a-entity position="0 0.4 -0.4">
+            
+            <a-sphere position="-0.15 0 0" radius="0.08" color="white">
+              <a-sphere position="0 0 -0.06" radius="0.04" color="black"></a-sphere>
+            </a-sphere>
 
-body{
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    background:radial-gradient(circle, #450a0a 0%, #1a0000 40%, #000 100%);
-    overflow:hidden;
-}
+            <a-sphere position="0.15 0 0" radius="0.08" color="white">
+              <a-sphere position="0 0 -0.06" radius="0.04" color="black"></a-sphere>
+            </a-sphere>
 
-/* Animated background glow */
-body::before{
-    content:"";
-    position:absolute;
-    width:200%;
-    height:200%;
-    background:radial-gradient(circle, rgba(255,0,0,0.15), transparent 70%);
-    animation:rotateGlow 10s linear infinite;
-}
-
-.container{
-    position:relative;
-    z-index:2;
-    width:90%;
-    max-width:550px;
-    padding:30px;
-    border-radius:20px;
-    text-align:center;
-    color:white;
-    background:rgba(0,0,0,0.75);
-    border:2px solid #ff0000;
-    box-shadow:
-        0 0 15px #ff0000,
-        0 0 40px rgba(255,0,0,0.6),
-        0 0 80px rgba(255,0,0,0.3);
-    animation:popup 0.8s ease;
-}
-
-h1{
-    font-size:2rem;
-    color:#ff3b3b;
-    margin-bottom:20px;
-    text-shadow:0 0 10px red;
-    animation:dangerFlash 1s infinite;
-}
-
-p{
-    line-height:1.8;
-    margin-bottom:25px;
-    color:#f5d0d0;
-}
-
-button{
-    padding:14px 28px;
-    border:none;
-    border-radius:10px;
-    background:#b91c1c;
-    color:white;
-    font-size:16px;
-    font-weight:bold;
-    cursor:pointer;
-    transition:0.3s;
-    box-shadow:0 0 15px rgba(255,0,0,0.5);
-}
-
-button:hover{
-    transform:scale(1.08);
-    background:#dc2626;
-    box-shadow:0 0 25px red;
-}
-
-@keyframes popup{
-    from{
-        opacity:0;
-        transform:scale(0.7);
-    }
-    to{
-        opacity:1;
-        transform:scale(1);
-    }
-}
-
-@keyframes dangerFlash{
-    0%,100%{
-        opacity:1;
-    }
-    50%{
-        opacity:0.4;
-    }
-}
-
-@keyframes rotateGlow{
-    from{
-        transform:rotate(0deg);
-    }
-    to{
-        transform:rotate(360deg);
-    }
-}
-</style>
-</head>
-<body>
-
-<div class="container">
-    <h1>☢️ CRITICAL WARNING ☢️</h1>
-
-    <p>
-        <strong>THIS IS AN EXPERIMENTAL DEVELOPMENT BUILD</strong><br><br>
-
-        ⚠️ The application may crash without warning.<br>
-        ⚠️ Data loss or corruption may occur.<br>
-        ⚠️ Features may be incomplete or unstable.<br>
-        ⚠️ Unexpected errors and bugs are likely.<br>
-        ⚠️ Performance issues may occur at any time.<br><br>
-
-        By continuing, you acknowledge that you are using this software at your own risk.
-    </p>
-
-    <button onclick="continueToApp()">
-        ⚠️ CONTINUE ANYWAY
-    </button>
-</div>
-
-<script>
-function continueToApp(){
-    window.location.href = "play.html";
-}
-</script>
-
-</body>
+            <a-box position="0 -0.25 0" width="0.2" height="0.05" depth="0.1" color="#333"
+                   animation="property: scale; to: 1 4 1; dir: alternate; dur: 250; loop: true"></a-box>
+                   
+          </a-entity>
+        </a-cylinder>
+        
+        <a-entity id="camera" camera look-controls position="0 1.6 0"></a-entity>
+        
+      </a-entity>
+    </a-scene>
+  </body>
 </html>
