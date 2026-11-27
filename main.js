@@ -9,9 +9,26 @@ scene.background = new THREE.Color(0x080d18);
 scene.fog = new THREE.FogExp2(0x080d18, 0.025);
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 180);
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const graphicsSelect = $('graphics');
+function applyGraphics(level) {
+  const presets = {
+    low: { ratio: 0.85, shadows: false, fog: 0.012, light: 0.85 },
+    medium: { ratio: 1.25, shadows: true, fog: 0.025, light: 1.1 },
+    high: { ratio: 1.75, shadows: true, fog: 0.032, light: 1.25 }
+  };
+  const p = presets[level] || presets.medium;
+  renderer.setPixelRatio(Math.min(devicePixelRatio, p.ratio));
+  renderer.shadowMap.enabled = p.shadows;
+  sun.intensity = p.light;
+  scene.fog.density = p.fog;
+  renderer.setSize(innerWidth, innerHeight);
+  toast('GRAPHICS: ' + level.toUpperCase());
+}
+graphicsSelect.addEventListener('change', () => applyGraphics(graphicsSelect.value));
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
@@ -199,12 +216,13 @@ window.addEventListener('blur', () => { player.keys = {}; dragging = false; });
 window.addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, ({low:0.85,medium:1.25,high:1.75}[graphicsSelect.value] || 1.25)));
   renderer.setSize(innerWidth, innerHeight);
 });
 
 buildLevel(currentLevel);
 setFov(60);
+applyGraphics('medium');
 let lastTime = performance.now();
 function animate(now) {
   requestAnimationFrame(animate);
@@ -217,7 +235,7 @@ function animate(now) {
     tile.mesh.material.emissive.setHex(tile.isHot ? 0xff2200 : 0x000000);
     tile.mesh.material.emissiveIntensity = tile.isHot ? 0.8 + cycle * 0.3 : 0;
   });
-  if (goalMesh) { goalMesh.rotation.z += dt * 1.5; goalMesh.rotation.y += dt * 0.5; }
+  if (goalMesh) { goalMesh.rotation.z += dt * 0.65; goalMesh.rotation.y += dt * 0.25; }
   if (!isPaused) {
     const status = player.update(dt, mazeData.grid, lavaTiles);
     if (status === 'GOAL') {
@@ -241,7 +259,7 @@ function animate(now) {
     player.mesh.position.z + Math.cos(yaw) * horizontal
   );
   camera.position.lerp(desired, 0.13);
-  camera.lookAt(player.mesh.position.x, player.mesh.position.y + 0.15, player.mesh.position.z);
+  camera.lookAt(player.mesh.position.x, player.mesh.position.y + 0.72, player.mesh.position.z);
   renderer.render(scene, camera);
 }
 requestAnimationFrame(animate);
