@@ -1,51 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#080d18" />
-  <title>Neon Maze — 3D Survival</title>
-  <link rel="stylesheet" href="style.css" />
-  <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#171b1d"><title>Neon Maze — 3D Survival</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
 </head>
 <body>
-  <header id="hud" class="glass">
-    <div class="brand"><span class="brand-mark">N</span><div><strong>NEON MAZE</strong><small>3D SURVIVAL</small></div></div>
-    <div class="stats">
-      <div class="stat"><small>LEVEL</small><strong id="level-num">1</strong></div>
-      <div class="stat"><small>MAZE</small><strong id="maze-size">7×7</strong></div>
-      <div class="stat"><small>THREATS</small><strong id="hazard-status">NONE</strong></div>
-    </div>
-    <div class="hint">MOVE <b>W A S D</b> / ARROWS <span>•</span> SPACE TO JUMP</div>
-  </header>
-  <aside id="settings" class="glass">
-    <div class="panel-head"><span>CAMERA SETTINGS</span><span class="live-dot"></span></div>
-    <label for="fov">FIELD OF VIEW <output id="fov-value">60°</output></label>
-    <input id="fov" type="range" min="40" max="100" value="60" step="1" />
-    <div class="presets">
-      <button type="button" data-fov="50">NARROW</button>
-      <button type="button" data-fov="60" class="selected">NORMAL</button>
-      <button type="button" data-fov="90">WIDE</button>
-    </div>
-    <div class="divider"></div>
-    <div class="camera-row"><span>DRAG SENSITIVITY</span><select id="sensitivity"><option value="0.0035">LOW</option><option value="0.006" selected>NORMAL</option><option value="0.01">HIGH</option></select></div>
-    <div class="camera-row"><span>ZOOM</span><span class="muted">Scroll / pinch</span></div>
-    <div class="camera-row"><label for="graphics">GRAPHICS</label><select id="graphics"><option value="low">LOW</option><option value="medium" selected>MEDIUM</option><option value="high">HIGH</option></select></div>
-    <div class="actions"><button type="button" id="pause-btn">Ⅱ PAUSE</button><button type="button" id="restart-btn">↻ RESTART</button></div>
-  </aside>
-  <section id="banner" class="glass hidden"><div class="banner-kicker">NEON MAZE</div><h1 id="banner-title">LEVEL COMPLETE</h1><p id="banner-sub">Preparing next floor...</p></section>
-  <div id="mobile-controls" aria-label="Movement controls">
-    <button class="d-btn" data-key="ArrowUp" aria-label="Move forward">▲</button>
-    <div class="d-row">
-      <button class="d-btn" data-key="ArrowLeft" aria-label="Move left">◀</button>
-      <button class="d-btn" data-key="ArrowDown" aria-label="Move backward">▼</button>
-      <button class="d-btn" data-key="ArrowRight" aria-label="Move right">▶</button>
-    </div>
-  </div>
-  <button id="jump-btn" type="button" aria-label="Jump">JUMP</button>
-  <div id="look-tip">DRAG THE GAME TO LOOK <span>↗</span></div>
-  <div id="toast" role="status" aria-live="polite"></div>
-  <main id="game-container"></main>
-  <script type="module" src="./main.js"></script>
-</body>
-</html>
+<main id="game-container"></main>
+<header id="hud" class="glass">
+ <div class="brand"><span class="brand-mark">N</span><div><strong>NEON MAZE</strong><small>3D SURVIVAL</small></div></div>
+ <div class="stats">
+  <div class="stat"><small>LEVEL</small><strong id="level-num">1</strong></div>
+  <div class="stat"><small>MAZE</small><strong id="maze-size">7×7</strong></div>
+  <div class="stat"><small>THREATS</small><strong id="hazard-status">NONE</strong></div>
+  <div class="stat"><small>HEARTS</small><strong id="heart-count">0 ♥</strong></div>
+ </div>
+ <div class="hint">WASD / ARROWS · SPACE TO JUMP · DRAG TO LOOK</div>
+</header>
+<button id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings">⚙ SETTINGS</button>
+<aside id="settings" class="glass hidden" aria-label="Game settings">
+ <div class="panel-head"><span>GAME SETTINGS</span><button id="close-settings" type="button" aria-label="Close settings">×</button></div>
+ <label for="fov">FIELD OF VIEW <output id="fov-value">60°</output></label>
+ <input id="fov" type="range" min="40" max="100" value="60" step="1">
+ <div class="presets"><button type="button" data-fov="50">NARROW</button><button type="button" data-fov="60" class="selected">NORMAL</button><button type="button" data-fov="90">WIDE</button></div>
+ <div class="camera-row"><span>LOOK SENSITIVITY</span><select id="sensitivity"><option value="0.0035">LOW</option><option value="0.006" selected>NORMAL</option><option value="0.01">HIGH</option></select></div>
+ <div class="camera-row"><span>GRAPHICS</span><select id="graphics"><option value="low">LOW</option><option value="medium" selected>MEDIUM</option><option value="high">HIGH</option></select></div>
+ <div class="camera-row"><span>ZOOM</span><span class="muted">Wheel / pinch</span></div>
+ <div class="actions"><button type="button" id="pause-btn">Ⅱ PAUSE</button><button type="button" id="restart-btn">↻ RESTART</button></div>
+</aside>
+<div id="mobile-controls" aria-label="Mobile controls">
+ <div id="joystick" aria-label="Movement joystick"><div id="joystick-knob"></div></div>
+ <button id="jump-btn" type="button" aria-label="Jump">JUMP</button>
+</div>
+<div id="portrait-message">Rotate your phone to landscape to play.</div>
+<section id="banner" class="glass hidden"><div class="banner-kicker">NEON MAZE</div><h1 id="banner-title">LEVEL COMPLETE</h1><p id="banner-sub">Preparing next floor...</p></section>
+<div id="look-tip">DRAG TO LOOK <span>↗</span></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="./main.js"></script>
+</body></html>
