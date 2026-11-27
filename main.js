@@ -2,233 +2,212 @@ import * as THREE from 'three';
 import { generateMaze } from './maze.js';
 import { Player, Monster, CELL_SIZE } from './entities.js';
 
-const container = document.getElementById('game-container');
-const levelNumEl = document.getElementById('level-num');
-const mazeSizeEl = document.getElementById('maze-size');
-const hazardStatusEl = document.getElementById('hazard-status');
-const bannerEl = document.getElementById('banner');
-const bannerTitleEl = document.getElementById('banner-title');
-const bannerSubEl = document.getElementById('banner-sub');
-
-// Scene, Camera & Renderer Setup
+const $ = (id) => document.getElementById(id);
+const container = $('game-container');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0b0c10);
-scene.fog = new THREE.FogExp2(0x0b0c10, 0.035);
-
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+scene.background = new THREE.Color(0x080d18);
+scene.fog = new THREE.FogExp2(0x080d18, 0.025);
+const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 180);
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
-// Ambient & Directional Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
-scene.add(ambientLight);
-
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-dirLight.position.set(15, 30, 15);
-dirLight.castShadow = true;
-scene.add(dirLight);
-
-// Game State
-let currentLevel = 1;
-let mazeData = null;
-let levelGroup = new THREE.Group();
-scene.add(levelGroup);
-
-let lavaTiles = [];
-let monsters = [];
-let goalMesh = null;
-let isPaused = false;
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const sun = new THREE.DirectionalLight(0xd8eaff, 1.1);
+sun.position.set(15, 30, 15);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+scene.add(sun);
 
 const player = new Player(scene);
+let levelGroup = new THREE.Group();
+scene.add(levelGroup);
+let currentLevel = 1, mazeData, lavaTiles = [], monsters = [], goalMesh = null, isPaused = false, bannerTimer = null;
+const wallMat = new THREE.MeshStandardMaterial({ color: 0x263b59, roughness: 0.72 });
+const floorMat = new THREE.MeshStandardMaterial({ color: 0x111e31, roughness: 0.95 });
+const lavaMat = new THREE.MeshStandardMaterial({ color: 0xff4500, emissive: 0xff2200, emissiveIntensity: 0.9 });
+const goalMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x16a34a, emissiveIntensity: 0.8 });
 
-// Shared Materials
-const wallMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
-const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
-const goalMat = new THREE.MeshStandardMaterial({
-  color: 0x22c55e,
-  emissive: 0x16a34a,
-  emissiveIntensity: 0.8
-});
+let yaw = 0, pitch = 0.78, cameraDistance = 12, dragging = false, lastX = 0, lastY = 0;
+const fovSlider = $('fov'), fovValue = $('fov-value'), sensitivity = $('sensitivity');
+function setFov(value) {
+  const fov = THREE.MathUtils.clamp(Number(value) || 60, 40, 100);
+  camera.fov = fov;
+  camera.updateProjectionMatrix();
+  fovSlider.value = String(fov);
+  fovValue.value = fov + '°';
+  document.querySelectorAll('[data-fov]').forEach((button) => button.classList.toggle('selected', Number(button.dataset.fov) === fov));
+}
+fovSlider.addEventListener('input', () => setFov(fovSlider.value));
+document.querySelectorAll('[data-fov]').forEach((button) => button.addEventListener('click', () => setFov(button.dataset.fov)));
+function toast(message) {
+  const el = $('toast');
+  el.textContent = message;
+  el.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => el.classList.remove('show'), 1600);
+}
 
 function buildLevel(level) {
-  // Clear previous level objects
   scene.remove(levelGroup);
+  levelGroup.traverse((object) => { if (object.geometry) object.geometry.dispose(); });
   levelGroup = new THREE.Group();
   scene.add(levelGroup);
-
-  monsters.forEach((m) => m.destroy(scene));
+  monsters.forEach((monster) => monster.destroy(scene));
   monsters = [];
   lavaTiles = [];
-
   mazeData = generateMaze(level);
   const { grid, size, goalPos, lavaCells, monsterSpawns } = mazeData;
+  $('level-num').textContent = String(level);
+  $('maze-size').textContent = size + '×' + size;
+  $('hazard-status').textContent = level <= 3 ? 'NONE' : level <= 5 ? 'PULSING LAVA' : 'LAVA + ' + monsterSpawns.length + ' MONSTER(S)';
+  $('hazard-status').style.color = level > 5 ? '#ff7184' : '#8eeaff';
 
-  // Update HUD
-  levelNumEl.textContent = level;
-  mazeSizeEl.textContent = `${size}x${size}`;
-  if (level <= 3) {
-    hazardStatusEl.textContent = 'None';
-    hazardStatusEl.style.color = '#38bdf8';
-  } else if (level <= 5) {
-    hazardStatusEl.textContent = 'Pulsing Lava (Wait for cool down!)';
-    hazardStatusEl.style.color = '#fb923c';
-  } else {
-    hazardStatusEl.textContent = `Lava + ${monsterSpawns.length} Hunting Monster(s)`;
-    hazardStatusEl.style.color = '#ef4444';
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(size * CELL_SIZE, size * CELL_SIZE), floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set((size - 1) * CELL_SIZE / 2, 0, (size - 1) * CELL_SIZE / 2);
+  floor.receiveShadow = true;
+  levelGroup.add(floor);
+  const wallGeometry = new THREE.BoxGeometry(CELL_SIZE, 2.2, CELL_SIZE);
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+    if (grid[r][c] !== 1) continue;
+    const wall = new THREE.Mesh(wallGeometry, wallMat);
+    wall.position.set(c * CELL_SIZE, 1.1, r * CELL_SIZE);
+    wall.castShadow = true;
+    wall.receiveShadow = true;
+    levelGroup.add(wall);
   }
-
-  // Build Floor Base
-  const floorGeo = new THREE.PlaneGeometry(size * CELL_SIZE, size * CELL_SIZE);
-  const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-  floorMesh.rotation.x = -Math.PI / 2;
-  floorMesh.position.set(((size - 1) * CELL_SIZE) / 2, 0, ((size - 1) * CELL_SIZE) / 2);
-  floorMesh.receiveShadow = true;
-  levelGroup.add(floorMesh);
-
-  // Build Maze Walls
-  const wallGeo = new THREE.BoxGeometry(CELL_SIZE, 2.2, CELL_SIZE);
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      if (grid[r][c] === 1) {
-        const wall = new THREE.Mesh(wallGeo, wallMat);
-        wall.position.set(c * CELL_SIZE, 1.1, r * CELL_SIZE);
-        wall.castShadow = true;
-        wall.receiveShadow = true;
-        levelGroup.add(wall);
-      }
-    }
-  }
-
-  // Build Goal Portal
-  const goalGeo = new THREE.CylinderGeometry(0.65, 0.65, 1.8, 24);
-  goalMesh = new THREE.Mesh(goalGeo, goalMat);
-  goalMesh.position.set(goalPos.c * CELL_SIZE, 0.9, goalPos.r * CELL_SIZE);
+  goalMesh = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.13, 12, 32), goalMat);
+  goalMesh.position.set(goalPos.c * CELL_SIZE, 1, goalPos.r * CELL_SIZE);
+  goalMesh.rotation.x = Math.PI / 2;
   levelGroup.add(goalMesh);
-
-  // Build Lava Traps (Unlocked after Level 3)
-  const lavaGeo = new THREE.BoxGeometry(CELL_SIZE * 0.92, 0.12, CELL_SIZE * 0.92);
-  lavaCells.forEach(({ r, c }, idx) => {
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0xff4500,
-      emissive: 0xff2200,
-      emissiveIntensity: 0.9
-    });
-    const mesh = new THREE.Mesh(lavaGeo, mat);
+  const lavaGeometry = new THREE.BoxGeometry(CELL_SIZE * 0.92, 0.12, CELL_SIZE * 0.92);
+  lavaCells.forEach(({ r, c }, index) => {
+    const mesh = new THREE.Mesh(lavaGeometry, lavaMat);
     mesh.position.set(c * CELL_SIZE, 0.06, r * CELL_SIZE);
     levelGroup.add(mesh);
-
-    // Offset phases so lava tiles pulse open/closed so the player can cross
-    lavaTiles.push({
-      r,
-      c,
-      mesh,
-      phaseOffset: idx * 1.1,
-      isHot: true
-    });
+    lavaTiles.push({ r, c, mesh, phaseOffset: index * 1.1, isHot: true });
   });
-
-  // Spawn Patrol Monsters (Unlocked after Level 5)
-  monsterSpawns.forEach(({ r, c }) => {
-    monsters.push(new Monster(scene, r, c, level));
-  });
-
+  monsterSpawns.forEach(({ r, c }) => monsters.push(new Monster(scene, r, c, level)));
   player.resetPosition();
+  yaw = 0;
+  pitch = 0.78;
+  cameraDistance = Math.max(10, Math.min(19, size * 0.72));
 }
 
-function showBanner(title, subtitle, isDanger = false, callback) {
+function showBanner(title, subtitle, danger = false, callback = () => {}) {
   isPaused = true;
-  bannerTitleEl.textContent = title;
-  bannerSubEl.textContent = subtitle;
-  bannerEl.classList.toggle('danger', isDanger);
-  bannerEl.classList.remove('hidden');
-
-  setTimeout(() => {
-    bannerEl.classList.add('hidden');
+  $('banner-title').textContent = title;
+  $('banner-sub').textContent = subtitle;
+  $('banner').classList.toggle('danger', danger);
+  $('banner').classList.remove('hidden');
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => {
+    $('banner').classList.add('hidden');
     callback();
     isPaused = false;
-  }, 1500);
+    $('pause-btn').textContent = 'Ⅱ PAUSE';
+  }, 1450);
 }
+function togglePause() {
+  if (!$('banner').classList.contains('hidden')) return;
+  isPaused = !isPaused;
+  $('pause-btn').textContent = isPaused ? '▶ RESUME' : 'Ⅱ PAUSE';
+  toast(isPaused ? 'GAME PAUSED' : 'GAME RESUMED');
+}
+$('pause-btn').addEventListener('click', togglePause);
+$('restart-btn').addEventListener('click', () => {
+  clearTimeout(bannerTimer);
+  $('banner').classList.add('hidden');
+  isPaused = false;
+  currentLevel = 1;
+  buildLevel(currentLevel);
+  $('pause-btn').textContent = 'Ⅱ PAUSE';
+  toast('MAZE RESTARTED');
+});
+window.addEventListener('keydown', (event) => { if (event.code === 'Escape' || event.code === 'KeyP') togglePause(); });
 
-// Handle Window Resize
+const canvas = renderer.domElement;
+canvas.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return;
+  dragging = true; lastX = event.clientX; lastY = event.clientY;
+  canvas.setPointerCapture(event.pointerId);
+});
+canvas.addEventListener('pointermove', (event) => {
+  if (!dragging) return;
+  const dx = event.clientX - lastX, dy = event.clientY - lastY;
+  lastX = event.clientX; lastY = event.clientY;
+  const speed = Number(sensitivity.value);
+  yaw -= dx * speed;
+  pitch = THREE.MathUtils.clamp(pitch + dy * speed, 0.22, 1.42);
+});
+function stopDrag() { dragging = false; }
+canvas.addEventListener('pointerup', stopDrag);
+canvas.addEventListener('pointercancel', stopDrag);
+canvas.addEventListener('lostpointercapture', stopDrag);
+canvas.addEventListener('wheel', (event) => {
+  cameraDistance = THREE.MathUtils.clamp(cameraDistance + event.deltaY * 0.012, 6, 30);
+  event.preventDefault();
+}, { passive: false });
+
+document.querySelectorAll('.d-btn').forEach((button) => {
+  const code = button.dataset.key;
+  const release = (event) => { event.preventDefault(); player.keys[code] = false; };
+  button.addEventListener('pointerdown', (event) => {
+    event.preventDefault(); player.keys[code] = true; button.setPointerCapture(event.pointerId);
+  });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => button.addEventListener(type, release));
+});
+window.addEventListener('blur', () => { player.keys = {}; dragging = false; });
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
 });
 
-// Start Game at Level 1
 buildLevel(currentLevel);
-
+setFov(60);
 let lastTime = performance.now();
-
 function animate(now) {
   requestAnimationFrame(animate);
-  const dt = Math.min((now - lastTime) / 1000, 0.1);
+  const dt = Math.min((now - lastTime) / 1000, 0.08);
   lastTime = now;
-
-  // Pulse Lava Tiles (Hot vs Safe Cooled Crust)
   lavaTiles.forEach((tile) => {
     const cycle = Math.sin(now * 0.0025 + tile.phaseOffset);
-    // Lava cools down briefly when cycle drops below -0.35 so no path is ever permanently blocked
     tile.isHot = cycle > -0.35;
-    if (tile.isHot) {
-      tile.mesh.material.color.setHex(0xff4500);
-      tile.mesh.material.emissive.setHex(0xff2200);
-      tile.mesh.material.emissiveIntensity = 0.8 + cycle * 0.3;
-    } else {
-      tile.mesh.material.color.setHex(0x3f3f46);
-      tile.mesh.material.emissive.setHex(0x000000);
-    }
+    tile.mesh.material.color.setHex(tile.isHot ? 0xff4500 : 0x3f3f46);
+    tile.mesh.material.emissive.setHex(tile.isHot ? 0xff2200 : 0x000000);
+    tile.mesh.material.emissiveIntensity = tile.isHot ? 0.8 + cycle * 0.3 : 0;
   });
-
-  if (goalMesh) {
-    goalMesh.rotation.y += dt * 2;
-  }
-
+  if (goalMesh) { goalMesh.rotation.z += dt * 1.5; goalMesh.rotation.y += dt * 0.5; }
   if (!isPaused) {
     const status = player.update(dt, mazeData.grid, lavaTiles);
-
     if (status === 'GOAL') {
       currentLevel++;
-      showBanner(
-        `Level ${currentLevel - 1} Cleared!`,
-        currentLevel === 4
-          ? 'Warning: Lava traps unlocked!'
-          : currentLevel === 6
-          ? 'Danger: Monsters have entered the maze!'
-          : `Advancing to Level ${currentLevel}...`,
-        false,
-        () => buildLevel(currentLevel)
-      );
+      showBanner('LEVEL ' + (currentLevel - 1) + ' CLEARED', 'Entering level ' + currentLevel, false, () => buildLevel(currentLevel));
     } else if (status === 'LAVA_HIT') {
-      showBanner('Burned by Lava!', 'Cross when the lava cools dark grey.', true, () =>
-        player.resetPosition()
-      );
+      showBanner('LAVA CONTACT', 'Wait for the glowing tile to cool down.', true, () => player.resetPosition());
     }
-
-    // Update Monsters
     for (const monster of monsters) {
-      const caught = monster.update(dt, mazeData.grid, player.mesh.position);
-      if (caught && !isPaused) {
-        showBanner('Caught by a Monster!', 'Respawning at level start...', true, () =>
-          player.resetPosition()
-        );
+      if (monster.update(dt, mazeData.grid, player.mesh.position) && !isPaused) {
+        showBanner('YOU WERE CAUGHT', 'Returning to the level start.', true, () => player.resetPosition());
         break;
       }
     }
   }
-
-  // Smooth top-down angled follow camera
-  const targetCamX = player.mesh.position.x;
-  const targetCamZ = player.mesh.position.z + 9;
-  camera.position.x += (targetCamX - camera.position.x) * 0.1;
-  camera.position.z += (targetCamZ - camera.position.z) * 0.1;
-  camera.position.y = 13;
-  camera.lookAt(player.mesh.position.x, 0, player.mesh.position.z);
-
+  const horizontal = Math.cos(pitch) * cameraDistance;
+  const vertical = Math.sin(pitch) * cameraDistance;
+  const desired = new THREE.Vector3(
+    player.mesh.position.x + Math.sin(yaw) * horizontal,
+    player.mesh.position.y + vertical,
+    player.mesh.position.z + Math.cos(yaw) * horizontal
+  );
+  camera.position.lerp(desired, 0.13);
+  camera.lookAt(player.mesh.position.x, player.mesh.position.y + 0.15, player.mesh.position.z);
   renderer.render(scene, camera);
 }
-
 requestAnimationFrame(animate);
