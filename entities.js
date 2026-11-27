@@ -1,108 +1,65 @@
 import * as THREE from 'three';
-
 export const CELL_SIZE = 2;
-
 export class Player {
-  constructor(scene) {
-    this.mesh = new THREE.Group();
-    this.mesh.name = 'player-character';
-    this.visual = new THREE.Group();
-    this.mesh.add(this.visual);
-    const makeMat = (color, roughness = 0.78, metalness = 0) =>
-      new THREE.MeshStandardMaterial({ color, roughness, metalness });
-    const skin = makeMat(0xc58f68);
-    const jacket = makeMat(0x344b5c);
-    const trousers = makeMat(0x202b39);
-    const boots = makeMat(0x171d25);
-    const hair = makeMat(0x24201d);
-    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x171717, roughness: 0.4 });
-    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.25, 0.38, 5, 10), jacket);
-    torso.position.y = 0.88; torso.castShadow = true; this.visual.add(torso);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 18, 14), skin);
-    head.position.y = 1.48; head.castShadow = true; this.visual.add(head);
-    const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.225, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.48), hair);
-    hairCap.position.y = 1.53; this.visual.add(hairCap);
-    for (const side of [-1, 1]) {
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), eyeMat);
-      eye.position.set(side * 0.075, 1.49, 0.19); this.visual.add(eye);
-      const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.31, 4, 8), jacket);
-      arm.position.set(side * 0.31, 0.91, 0); arm.rotation.z = side * -0.12;
-      arm.castShadow = true; this.visual.add(arm);
-      const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.31, 4, 8), trousers);
-      leg.position.set(side * 0.13, 0.34, 0); leg.castShadow = true; this.visual.add(leg);
-      const boot = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.12, 0.27), boots);
-      boot.position.set(side * 0.13, 0.1, 0.045); this.visual.add(boot);
-    }
-    scene.add(this.mesh);
-    this.light = new THREE.PointLight(0x9bc9df, 0.65, 5);
-    this.light.position.set(0, 1.2, 0); this.mesh.add(this.light);
-    this.radius = 0.34; this.speed = 5.2; this.keys = {};
-    this.jumpHeight = 0; this.verticalVelocity = 0; this.jumpHeld = false;
-    window.addEventListener('keydown', e => { this.keys[e.code] = true; });
-    window.addEventListener('keyup', e => { this.keys[e.code] = false; });
-    const jump = document.getElementById('jump-btn');
-    if (jump) {
-      const start = e => { e.preventDefault(); this.jump(); };
-      jump.addEventListener('pointerdown', start);
-      jump.addEventListener('click', start);
-    }
+ constructor(scene){
+  this.mesh=new THREE.Group();this.visual=new THREE.Group();this.mesh.add(this.visual);
+  const mat=(color,roughness=.78)=>new THREE.MeshStandardMaterial({color,roughness});
+  const skin=mat(0xc58f68),jacket=mat(0x344b5c),pants=mat(0x202b39),boots=mat(0x171d25),hair=mat(0x24201d);
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.25,.38,6,12),jacket);torso.position.y=.88;torso.castShadow=true;this.visual.add(torso);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.22,24,18),skin);head.position.y=1.48;head.castShadow=true;this.visual.add(head);
+  const hairCap=new THREE.Mesh(new THREE.SphereGeometry(.225,20,12,0,Math.PI*2,0,Math.PI*.48),hair);hairCap.position.y=1.53;this.visual.add(hairCap);
+  this.legs=[];this.arms=[];
+  for(const side of [-1,1]){
+   const eye=new THREE.Mesh(new THREE.SphereGeometry(.025,10,8),mat(0x171717,.4));eye.position.set(side*.075,1.49,.19);this.visual.add(eye);
+   const armPivot=new THREE.Group();armPivot.position.set(side*.29,1.04,0);this.visual.add(armPivot);
+   const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.31,5,10),jacket);arm.position.y=-.16;arm.castShadow=true;armPivot.add(arm);this.arms.push(armPivot);
+   const legPivot=new THREE.Group();legPivot.position.set(side*.13,.48,0);this.visual.add(legPivot);
+   const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.31,5,10),pants);leg.position.y=-.17;leg.castShadow=true;legPivot.add(leg);
+   const boot=new THREE.Mesh(new THREE.BoxGeometry(.17,.12,.27),boots);boot.position.set(0,-.39,.045);legPivot.add(boot);this.legs.push(legPivot);
   }
-
-  jump() {
-    if (this.jumpHeight <= 0.001) this.verticalVelocity = 6.2;
+  scene.add(this.mesh);this.light=new THREE.PointLight(0x9bb6b0,.35,4);this.light.position.set(0,1.2,0);this.mesh.add(this.light);
+  this.radius=.34;this.speed=5.2;this.keys={};this.moveX=0;this.moveZ=0;this.jumpHeight=0;this.verticalVelocity=0;this.jumpHeld=false;this.walkClock=0;
+  window.addEventListener('keydown',e=>{this.keys[e.code]=true;if(e.code==='Space')e.preventDefault();});
+  window.addEventListener('keyup',e=>{this.keys[e.code]=false;});
+  const jump=document.getElementById('jump-btn');if(jump)jump.addEventListener('pointerdown',e=>{e.preventDefault();this.jump();});
+ }
+ setMoveVector(x,z){this.moveX=x;this.moveZ=z;}
+ jump(){if(this.jumpHeight<=.001)this.verticalVelocity=6.5;}
+ resetPosition(r=1,c=1){this.mesh.position.set(c*CELL_SIZE,0,r*CELL_SIZE);this.jumpHeight=0;this.verticalVelocity=0;this.visual.position.y=0;}
+ update(dt,grid,lavaTiles){
+  const grounded=this.jumpHeight<=.001;
+  if((this.keys.Space||this.keys.KeyJ)&&grounded&&!this.jumpHeld)this.jump();
+  this.jumpHeld=!!(this.keys.Space||this.keys.KeyJ);
+  this.verticalVelocity-=18*dt;this.jumpHeight=Math.max(0,this.jumpHeight+this.verticalVelocity*dt);if(this.jumpHeight===0)this.verticalVelocity=0;
+  this.visual.position.y=this.jumpHeight;
+  let dx=this.moveX,dz=this.moveZ;
+  if(!dx&&!dz){if(this.keys.KeyA||this.keys.ArrowLeft)dx-=1;if(this.keys.KeyD||this.keys.ArrowRight)dx+=1;if(this.keys.KeyW||this.keys.ArrowUp)dz-=1;if(this.keys.KeyS||this.keys.ArrowDown)dz+=1;}
+  const moving=Math.hypot(dx,dz)>.08;
+  if(moving){
+   const len=Math.hypot(dx,dz);dx=dx/len*this.speed*dt;dz=dz/len*this.speed*dt;
+   const nx=this.mesh.position.x+dx,nz=this.mesh.position.z+dz;
+   if(!this.hitsWall(nx,this.mesh.position.z,grid))this.mesh.position.x=nx;
+   if(!this.hitsWall(this.mesh.position.x,nz,grid))this.mesh.position.z=nz;
+   const target=Math.atan2(dx,dz);let diff=((target-this.mesh.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
+   this.mesh.rotation.y+=diff*Math.min(1,dt*12);
+   this.walkClock+=dt*11;const swing=Math.sin(this.walkClock)*.62;
+   this.legs[0].rotation.x=swing;this.legs[1].rotation.x=-swing;
+   this.arms[0].rotation.x=-swing*.72;this.arms[1].rotation.x=swing*.72;
+  }else{
+   this.legs.forEach(l=>l.rotation.x=THREE.MathUtils.damp(l.rotation.x,0,10,dt));
+   this.arms.forEach(a=>a.rotation.x=THREE.MathUtils.damp(a.rotation.x,0,10,dt));
   }
-
-  resetPosition() {
-    this.mesh.position.set(CELL_SIZE, 0, CELL_SIZE);
-    this.jumpHeight = 0; this.verticalVelocity = 0;
-    this.visual.position.y = 0;
-  }
-
-  update(dt, grid, lavaTiles) {
-    const grounded = this.jumpHeight <= 0.001;
-    if ((this.keys.Space || this.keys.KeyJ) && grounded && !this.jumpHeld) this.jump();
-    this.jumpHeld = !!(this.keys.Space || this.keys.KeyJ);
-    this.verticalVelocity -= 17 * dt;
-    this.jumpHeight = Math.max(0, this.jumpHeight + this.verticalVelocity * dt);
-    if (this.jumpHeight === 0) this.verticalVelocity = 0;
-    this.visual.position.y = this.jumpHeight;
-    this.visual.rotation.z = 0;
-
-    let dx = 0, dz = 0;
-    if (this.keys.KeyW || this.keys.ArrowUp) dz -= 1;
-    if (this.keys.KeyS || this.keys.ArrowDown) dz += 1;
-    if (this.keys.KeyA || this.keys.ArrowLeft) dx -= 1;
-    if (this.keys.KeyD || this.keys.ArrowRight) dx += 1;
-    if (dx || dz) {
-      const len = Math.hypot(dx, dz);
-      dx = dx / len * this.speed * dt; dz = dz / len * this.speed * dt;
-      const nx = this.mesh.position.x + dx, nz = this.mesh.position.z + dz;
-      if (!this.hitsWall(nx, this.mesh.position.z, grid)) this.mesh.position.x = nx;
-      if (!this.hitsWall(this.mesh.position.x, nz, grid)) this.mesh.position.z = nz;
-      this.mesh.rotation.y = Math.atan2(dx, dz);
-      this.visual.rotation.z = Math.sin(performance.now() * 0.012) * 0.035;
-    }
-    const r = Math.round(this.mesh.position.z / CELL_SIZE);
-    const c = Math.round(this.mesh.position.x / CELL_SIZE);
-    const cell = grid[r]?.[c];
-    if (this.jumpHeight < 0.28 && cell === 3) return 'GOAL';
-    if (this.jumpHeight < 0.28 && cell === 2) {
-      const tile = lavaTiles.find(t => t.r === r && t.c === c);
-      if (tile && tile.isHot) return 'LAVA_HIT';
-    }
-    return 'ALIVE';
-  }
-
-  hitsWall(x, z, grid) {
-    const offsets = [[this.radius,this.radius],[-this.radius,this.radius],[this.radius,-this.radius],[-this.radius,-this.radius]];
-    for (const [ox, oz] of offsets) {
-      const c = Math.round((x + ox) / CELL_SIZE), r = Math.round((z + oz) / CELL_SIZE);
-      if (grid[r]?.[c] === 1 || !grid[r]) return true;
-    }
-    return false;
-  }
+  this.visual.rotation.z= moving?Math.sin(this.walkClock*2)*.025:0;
+  const r=Math.round(this.mesh.position.z/CELL_SIZE),c=Math.round(this.mesh.position.x/CELL_SIZE),cell=grid[r]?.[c];
+  if(this.jumpHeight<.3&&cell===3)return 'GOAL';
+  if(this.jumpHeight<.3&&cell===2){const lava=lavaTiles.find(t=>t.r===r&&t.c===c);if(lava&&lava.isHot)return 'LAVA_HIT';}
+  return 'ALIVE';
+ }
+ hitsWall(x,z,grid){
+  const o=[[this.radius,this.radius],[-this.radius,this.radius],[this.radius,-this.radius],[-this.radius,-this.radius]];
+  for(const [ox,oz] of o){const c=Math.round((x+ox)/CELL_SIZE),r=Math.round((z+oz)/CELL_SIZE);if(grid[r]?.[c]===1||!grid[r])return true;}return false;
+ }
 }
-
 export class Monster {
   constructor(scene, startR, startC, level) {
     this.group = new THREE.Group();
