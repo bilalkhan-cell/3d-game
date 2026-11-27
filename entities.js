@@ -94,7 +94,6 @@ export class Player {
   }
 
   hitsWall(x, z, grid) {
-    if (this.jumpHeight > 0.45) return false;
     const offsets = [[this.radius,this.radius],[-this.radius,this.radius],[this.radius,-this.radius],[-this.radius,-this.radius]];
     for (const [ox, oz] of offsets) {
       const c = Math.round((x + ox) / CELL_SIZE), r = Math.round((z + oz) / CELL_SIZE);
