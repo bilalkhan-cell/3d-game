@@ -107,7 +107,7 @@ let lastTime=performance.now();
 function animate(now){
  requestAnimationFrame(animate);const dt=Math.min((now-lastTime)/1000,.06);lastTime=now;
  lavaTexture.offset.x=(now*.000035)%1;lavaTexture.offset.y=(now*.000018)%1;
- lavaTiles.forEach(t=>{const wave=Math.sin(now*.002+t.phaseOffset)+Math.sin(now*.0012+t.phaseOffset*1.7)*.35;t.isHot=wave>-.65;t.mesh.material=lavaMat;t.mesh.position.y=.08+Math.sin(now*.003+t.phaseOffset)*.025;t.light.intensity=t.isHot?.55+Math.max(0,wave)*.25:.12;});
+ lavaTiles.forEach(t=>{const wave=Math.sin(now*.002+t.phaseOffset)+Math.sin(now*.0012+t.phaseOffset*1.7)*.35;t.isHot=wave>-.65;t.mesh.material=lavaMat;t.mesh.position.y=.08+Math.sin(now*.003+t.phaseOffset)*.025;t.light.intensity = t.isHot ? .55 + Math.max(0,wave)*.25 : .12;});
  if(goalMesh){goalMesh.rotation.z+=dt*.7;goalMesh.rotation.y+=dt*.3;}
  if(checkpointMesh){checkpointMesh.rotation.z+=dt*.7;checkpointMesh.material.emissiveIntensity=.3+Math.sin(now*.003)*.15;}
  heartPickups.forEach(h=>{if(h.active){h.mesh.position.y=.95+Math.sin(now*.003+h.phase)*.13;h.mesh.rotation.y=now*.0015+h.phase;}});
