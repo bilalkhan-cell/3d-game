@@ -1,19 +1,26 @@
-// Cell Types: 0 = Empty Floor, 1 = Wall, 2 = Lava (Level > 3), 3 = Goal Portal
+// Cell Types: 0 = Empty Floor, 1 = Wall, 2 = Lava, 3 = Goal Portal
+
+// Unbiased Fisher-Yates shuffle.
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
 
 export function generateMaze(level) {
-  // Size starts at 7x7 on Level 1 and grows by 2 rows/cols each level (must be odd)
   const size = 5 + level * 2;
   const grid = Array.from({ length: size }, () => Array(size).fill(1));
 
-  // Depth-First Recursive Backtracker
   function carve(r, c) {
     grid[r][c] = 0;
-    const dirs = [
+    const dirs = shuffle([
       [-2, 0],
       [2, 0],
       [0, -2],
       [0, 2]
-    ].sort(() => Math.random() - 0.5);
+    ]);
 
     for (const [dr, dc] of dirs) {
       const nr = r + dr;
@@ -27,36 +34,39 @@ export function generateMaze(level) {
 
   carve(1, 1);
 
-  // Create extra loops at higher levels so players can dodge lava and monsters
-  const extraPaths = Math.floor(size * 0.8);
-  for (let i = 0; i < extraPaths; i++) {
+  // Braid the maze by opening only walls that connect two opposite corridors.
+  const extraPaths = Math.floor(size * 0.7);
+  let braided = 0;
+  for (let attempts = 0; attempts < extraPaths * 6 && braided < extraPaths; attempts++) {
     const r = 2 + Math.floor(Math.random() * (size - 4));
     const c = 2 + Math.floor(Math.random() * (size - 4));
-    if (grid[r][c] === 1) {
+    const connectsVertical =
+      grid[r - 1][c] === 0 && grid[r + 1][c] === 0 &&
+      grid[r][c - 1] === 1 && grid[r][c + 1] === 1;
+    const connectsHorizontal =
+      grid[r][c - 1] === 0 && grid[r][c + 1] === 0 &&
+      grid[r - 1][c] === 1 && grid[r + 1][c] === 1;
+
+    if (grid[r][c] === 1 && (connectsVertical || connectsHorizontal)) {
       grid[r][c] = 0;
+      braided++;
     }
   }
 
-  // Place exit portal at bottom-right corner
   const goalPos = { r: size - 2, c: size - 2 };
   grid[goalPos.r][goalPos.c] = 3;
 
-  // After Level 3: Add Lava Tiles
   const lavaCells = [];
   if (level > 3) {
     const lavaCount = (level - 3) * 4;
     let placed = 0;
     let attempts = 0;
-
     while (placed < lavaCount && attempts < 300) {
       attempts++;
       const r = 1 + Math.floor(Math.random() * (size - 2));
       const c = 1 + Math.floor(Math.random() * (size - 2));
-
-      // Keep spawn (1,1) and exit clear
       const isStart = r <= 2 && c <= 2;
       const isGoal = r === goalPos.r && c === goalPos.c;
-
       if (grid[r][c] === 0 && !isStart && !isGoal) {
         grid[r][c] = 2;
         lavaCells.push({ r, c });
@@ -65,18 +75,15 @@ export function generateMaze(level) {
     }
   }
 
-  // After Level 5: Spawn Monsters on valid floor cells away from player spawn
   const monsterSpawns = [];
   if (level > 5) {
     const monsterCount = level - 5;
     let spawned = 0;
     let attempts = 0;
-
     while (spawned < monsterCount && attempts < 300) {
       attempts++;
       const r = 1 + Math.floor(Math.random() * (size - 2));
       const c = 1 + Math.floor(Math.random() * (size - 2));
-
       const distFromStart = Math.hypot(r - 1, c - 1);
       if (grid[r][c] === 0 && distFromStart > 4) {
         monsterSpawns.push({ r, c });
