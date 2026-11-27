@@ -16,7 +16,7 @@
       <div class="stat"><small>MAZE</small><strong id="maze-size">7×7</strong></div>
       <div class="stat"><small>THREATS</small><strong id="hazard-status">NONE</strong></div>
     </div>
-    <div class="hint">MOVE <b>W A S D</b> / ARROWS <span>•</span> DRAG TO LOOK</div>
+    <div class="hint">MOVE <b>W A S D</b> / ARROWS <span>•</span> SPACE TO JUMP</div>
   </header>
   <aside id="settings" class="glass">
     <div class="panel-head"><span>CAMERA SETTINGS</span><span class="live-dot"></span></div>
@@ -30,6 +30,7 @@
     <div class="divider"></div>
     <div class="camera-row"><span>DRAG SENSITIVITY</span><select id="sensitivity"><option value="0.0035">LOW</option><option value="0.006" selected>NORMAL</option><option value="0.01">HIGH</option></select></div>
     <div class="camera-row"><span>ZOOM</span><span class="muted">Scroll / pinch</span></div>
+    <div class="camera-row"><label for="graphics">GRAPHICS</label><select id="graphics"><option value="low">LOW</option><option value="medium" selected>MEDIUM</option><option value="high">HIGH</option></select></div>
     <div class="actions"><button type="button" id="pause-btn">Ⅱ PAUSE</button><button type="button" id="restart-btn">↻ RESTART</button></div>
   </aside>
   <section id="banner" class="glass hidden"><div class="banner-kicker">NEON MAZE</div><h1 id="banner-title">LEVEL COMPLETE</h1><p id="banner-sub">Preparing next floor...</p></section>
@@ -41,6 +42,7 @@
       <button class="d-btn" data-key="ArrowRight" aria-label="Move right">▶</button>
     </div>
   </div>
+  <button id="jump-btn" type="button" aria-label="Jump">JUMP</button>
   <div id="look-tip">DRAG THE GAME TO LOOK <span>↗</span></div>
   <div id="toast" role="status" aria-live="polite"></div>
   <main id="game-container"></main>
