@@ -2,39 +2,48 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Dungeon Maze Progression</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#080d18" />
+  <title>Neon Maze — 3D Survival</title>
   <link rel="stylesheet" href="style.css" />
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-      }
-    }
-  </script>
+  <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
 </head>
 <body>
-  <div id="hud">
-    <div class="stat">Level: <span id="level-num">1</span></div>
-    <div class="stat">Maze Size: <span id="maze-size">7x7</span></div>
-    <div class="stat">Hazards: <span id="hazard-status">None</span></div>
-    <div class="controls-hint">Move: <b>WASD / Arrows</b> | Reach the Green Portal</div>
-  </div>
-
-  <div id="banner" class="hidden">
-    <h1 id="banner-title">Level Complete!</h1>
-    <p id="banner-sub">Preparing next floor...</p>
-  </div>
-<div id="mobile-controls">
-    <button class="d-btn up" data-key="ArrowUp">▲</button>
+  <header id="hud" class="glass">
+    <div class="brand"><span class="brand-mark">N</span><div><strong>NEON MAZE</strong><small>3D SURVIVAL</small></div></div>
+    <div class="stats">
+      <div class="stat"><small>LEVEL</small><strong id="level-num">1</strong></div>
+      <div class="stat"><small>MAZE</small><strong id="maze-size">7×7</strong></div>
+      <div class="stat"><small>THREATS</small><strong id="hazard-status">NONE</strong></div>
+    </div>
+    <div class="hint">MOVE <b>W A S D</b> / ARROWS <span>•</span> DRAG TO LOOK</div>
+  </header>
+  <aside id="settings" class="glass">
+    <div class="panel-head"><span>CAMERA SETTINGS</span><span class="live-dot"></span></div>
+    <label for="fov">FIELD OF VIEW <output id="fov-value">60°</output></label>
+    <input id="fov" type="range" min="40" max="100" value="60" step="1" />
+    <div class="presets">
+      <button type="button" data-fov="50">NARROW</button>
+      <button type="button" data-fov="60" class="selected">NORMAL</button>
+      <button type="button" data-fov="90">WIDE</button>
+    </div>
+    <div class="divider"></div>
+    <div class="camera-row"><span>DRAG SENSITIVITY</span><select id="sensitivity"><option value="0.0035">LOW</option><option value="0.006" selected>NORMAL</option><option value="0.01">HIGH</option></select></div>
+    <div class="camera-row"><span>ZOOM</span><span class="muted">Scroll / pinch</span></div>
+    <div class="actions"><button type="button" id="pause-btn">Ⅱ PAUSE</button><button type="button" id="restart-btn">↻ RESTART</button></div>
+  </aside>
+  <section id="banner" class="glass hidden"><div class="banner-kicker">NEON MAZE</div><h1 id="banner-title">LEVEL COMPLETE</h1><p id="banner-sub">Preparing next floor...</p></section>
+  <div id="mobile-controls" aria-label="Movement controls">
+    <button class="d-btn" data-key="ArrowUp" aria-label="Move forward">▲</button>
     <div class="d-row">
-      <button class="d-btn left" data-key="ArrowLeft">◀</button>
-      <button class="d-btn down" data-key="ArrowDown">▼</button>
-      <button class="d-btn right" data-key="ArrowRight">▶</button>
+      <button class="d-btn" data-key="ArrowLeft" aria-label="Move left">◀</button>
+      <button class="d-btn" data-key="ArrowDown" aria-label="Move backward">▼</button>
+      <button class="d-btn" data-key="ArrowRight" aria-label="Move right">▶</button>
     </div>
   </div>
-  <div id="game-container"></div>
-
+  <div id="look-tip">DRAG THE GAME TO LOOK <span>↗</span></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <main id="game-container"></main>
   <script type="module" src="./main.js"></script>
 </body>
 </html>
