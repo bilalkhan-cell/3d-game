@@ -16,3 +16,11 @@ label{display:flex;justify-content:space-between;color:var(--muted);font:9px 'DM
 #jump-btn{position:fixed;z-index:7;right:24px;bottom:34px;width:76px;height:76px;border-radius:50%;border:1px solid #b5d7df88;background:#243744dd;color:#f1f4ef;font:600 11px 'DM Mono',monospace;letter-spacing:1px;box-shadow:0 5px 18px #0006;touch-action:manipulation;cursor:pointer}
 #jump-btn:active{transform:scale(.94);background:#49616b}
 @media(max-width:700px){#jump-btn{right:16px;bottom:180px;width:64px;height:64px}#settings{bottom:12px}#look-tip{bottom:260px}}
+
+/* A quieter, hand-finished interface: solid surfaces and restrained accents. */
+:root{--panel:rgba(25,31,32,.96);--line:rgba(190,196,184,.2);--text:#e8e7df;--muted:#a1a59c;--cyan:#9bb6b0}
+.glass{backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 8px 24px #0005}
+.brand-mark{background:#9bb6b0;color:#18201f}
+.presets button.selected,.presets button:hover{border-color:#9bb6b0;color:#c6d6cf;background:#9bb6b015}
+.live-dot{background:#a4b9a5;box-shadow:none}
+#jump-btn{background:#343f3d;border-color:#a6b8af;color:#f0eee6;box-shadow:0 4px 12px #0005}
