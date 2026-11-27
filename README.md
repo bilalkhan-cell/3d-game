@@ -4,7 +4,7 @@ A browser-based 3D maze survival game built with JavaScript and Three.js.
 
 ## About me
 
-Hi! I'm **Bilal Khan**, a junior developer from India. I enjoy building websites and interactive projects, learning how software works, and improving my programming skills.
+Hi! I'm **Bilal Khan**, a 15-year-old junior developer from India. I enjoy building websites and interactive projects, learning how software works, and improving my programming skills.
 
 I'm interested in:
 - Full-stack and web development
