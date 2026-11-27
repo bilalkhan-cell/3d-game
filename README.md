@@ -2,58 +2,37 @@
 
 A browser-based 3D maze survival game built with JavaScript and Three.js.
 
-## About me
-
-Hi! I'm **Bilal Khan**, a 15-year-old junior developer from India. I enjoy building websites and interactive projects, learning how software works, and improving my programming skills.
-
-I'm interested in:
-- Full-stack and web development
-- HTML, CSS, and JavaScript
-- SQL and databases
-- Cybersecurity and ethical penetration testing in authorized environments
-- 3D web experiences and game development
-
-I'm still learning, experimenting, and building projects to grow as a developer.
-
-## Game features
-
-- Procedurally generated maze levels
-- Adjustable camera field of view (FOV)
-- Drag to rotate the camera view
-- Mouse-wheel zoom
-- Keyboard and mobile touch movement
-- Lava hazards on later levels
-- Monster enemies with BFS pathfinding
-- Pause and restart controls
+## Features
+- Procedurally generated maze levels with lava and monsters.
+- Three graphics presets: Low, Medium and High.
+- Moving, textured lava with animated heat cycles.
+- A detailed player character with walking, turning and jumping animations.
+- Collectible hearts. Hearts are earned only by collecting them; taking damage consumes one.
+- Checkpoints save your respawn location. Respawning never grants free hearts.
+- Mobile landscape layout with an on-screen analog joystick and jump control.
+- Draggable settings button, adjustable FOV, camera drag and zoom.
+- Pause and restart controls.
 
 ## Controls
+| Action | Desktop | Mobile |
+|---|---|---|
+| Move | WASD / Arrow keys | On-screen joystick |
+| Jump | Space | JUMP button |
+| Look | Drag mouse | Drag screen |
+| Zoom | Mouse wheel | Pinch |
+| Settings | Draggable Settings button | Draggable Settings button |
 
-| Action | Control |
-|---|---|
-| Move | W A S D or arrow keys |
-| Look around | Click/touch and drag the game view |
-| Zoom | Mouse wheel |
-| Change FOV | FOV slider in Camera Settings |
-| Pause / resume | Pause button or P / Escape |
-| Restart | Restart button |
+On phones, rotate to landscape. The game requests fullscreen and landscape orientation where the browser supports it.
 
 ## Run locally
-
-Because the game uses JavaScript modules, run it through a local web server instead of opening the HTML file directly.
-
-Example with Python:
+Run through a local web server because the game uses ES modules:
 
     python -m http.server 8000
 
-Then open http://localhost:8000 in your browser.
+Then open http://localhost:8000.
 
 ## Technologies
-
-- HTML
-- CSS
-- JavaScript (ES modules)
+- HTML, CSS, JavaScript ES modules
 - Three.js
-
----
 
 Made by **Bilal Khan**.
