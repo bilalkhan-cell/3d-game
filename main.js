@@ -131,12 +131,37 @@ $('restart-btn').addEventListener('click', () => {
 window.addEventListener('keydown', (event) => { if (event.code === 'Escape' || event.code === 'KeyP') togglePause(); });
 
 const canvas = renderer.domElement;
+const activePointers = new Map();
+let pinchStartDistance = 0;
+let pinchStartZoom = cameraDistance;
+const pointerDistance = () => {
+  const points = [...activePointers.values()];
+  return points.length < 2 ? 0 : Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+};
 canvas.addEventListener('pointerdown', (event) => {
-  if (event.button !== 0) return;
-  dragging = true; lastX = event.clientX; lastY = event.clientY;
+  if (event.pointerType === 'mouse' && event.button !== 0) return;
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
   canvas.setPointerCapture(event.pointerId);
+  if (activePointers.size >= 2) {
+    dragging = false;
+    pinchStartDistance = pointerDistance();
+    pinchStartZoom = cameraDistance;
+  } else {
+    dragging = true;
+    lastX = event.clientX;
+    lastY = event.clientY;
+  }
 });
 canvas.addEventListener('pointermove', (event) => {
+  if (!activePointers.has(event.pointerId)) return;
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  if (activePointers.size >= 2) {
+    const distance = pointerDistance();
+    if (pinchStartDistance > 0 && distance > 0) {
+      cameraDistance = THREE.MathUtils.clamp(pinchStartZoom * pinchStartDistance / distance, 6, 30);
+    }
+    return;
+  }
   if (!dragging) return;
   const dx = event.clientX - lastX, dy = event.clientY - lastY;
   lastX = event.clientX; lastY = event.clientY;
@@ -144,7 +169,16 @@ canvas.addEventListener('pointermove', (event) => {
   yaw -= dx * speed;
   pitch = THREE.MathUtils.clamp(pitch + dy * speed, 0.22, 1.42);
 });
-function stopDrag() { dragging = false; }
+function stopDrag(event) {
+  activePointers.delete(event.pointerId);
+  dragging = false;
+  if (activePointers.size === 1) {
+    const remaining = [...activePointers.values()][0];
+    lastX = remaining.x;
+    lastY = remaining.y;
+    pinchStartDistance = 0;
+  }
+}
 canvas.addEventListener('pointerup', stopDrag);
 canvas.addEventListener('pointercancel', stopDrag);
 canvas.addEventListener('lostpointercapture', stopDrag);
